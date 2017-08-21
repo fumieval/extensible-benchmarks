@@ -1,0 +1,42 @@
+name:                extensible-benchmarks
+version:             0
+synopsis:            Benchmarks for extensible effect libraries
+homepage:            https://github.com/fumieval/extensible-benchmarks
+bug-reports:         http://github.com/fumieval/extensible/is
+description:         Poly-kinded extensible records, variants, effects, tangles
+license:             BSD3
+license-file:        LICENSE
+author:              Fumiaki Kinoshita
+maintainer:          Fumiaki Kinoshita <fumiexcel@gmail.com>
+copyright:           Copyright (c) 2017 Fumiaki Kinoshita
+category:            Data, Records, Monads
+build-type:          Simple
+stability:           experimental
+Tested-With:         GHC == 7.10.3, GHC == 8.0.1
+
+extra-source-files:
+  examples/*.hs
+  .gitignore
+  README.md
+  CHANGELOG.md
+cabal-version:       >=1.10
+
+source-repository head
+  type: git
+  location: https://github.com/fumieval/extensible-benchmarks.git
+
+benchmark records
+  type:           exitcode-stdio-1.0
+  main-is:        records.hs
+  ghc-options:    -O2
+  hs-source-dirs: benchmarks
+  build-depends: base, lens, criterion, extensible
+  default-language:    Haskell2010
+
+benchmark eff-comparison
+  type:           exitcode-stdio-1.0
+  main-is:        eff-comparison.hs
+  ghc-options:    -O2
+  hs-source-dirs: benchmarks
+  build-depends: base, criterion, extensible, extensible-effects, effin, freer-effects, mtl
+  default-language:    Haskell2010
