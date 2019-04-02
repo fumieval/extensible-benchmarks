@@ -10,15 +10,6 @@ import qualified Control.Eff.Reader.Strict as ExtEff
 import qualified Control.Eff.Writer.Strict as ExtEff
 import qualified Control.Eff.State.Strict as ExtEff
 
-{-
-removed due to a dependency issue
--- effin
-import qualified "effin" Control.Effect as Effin
-import qualified "effin" Control.Effect.Reader as Effin
-import qualified "effin" Control.Effect.Writer as Effin
-import qualified "effin" Control.Effect.State as Effin
--}
-
 -- freer-simple
 import qualified Control.Monad.Freer as Freer
 import qualified Control.Monad.Freer.Reader as Freer
@@ -60,22 +51,7 @@ runExtEff = ExtEff.run
   . ExtEff.runMonoidWriter
   . ExtEff.runState 0
   . ExtEff.runReader 1
-{-
-testEffin :: (Effin.EffectReader Int l
-  , Effin.EffectState Int l
-  , Effin.EffectWriter (Sum Int) l)
-  => Effin.Effect l ()
-testEffin = replicateM_ 100 $ do
-  r <- Effin.ask
-  s <- Effin.get
-  Effin.tell (Sum s)
-  Effin.put $! s + r
 
-runEffin = Effin.runEffect
-  . Effin.runWriter
-  . Effin.runState 0
-  . Effin.runReader 1
--}
 testFreer :: (Freer.Member (Freer.Reader Int) r
   , Freer.Member (Freer.State Int) r
   , Freer.Member (Freer.Writer (Sum Int)) r)
@@ -133,11 +109,10 @@ runExtensible = leaveEff
 
 main = defaultMain
   [ bgroup "rws"
-    [ bench "extensible" $ nf runExtensible testMTL
-    , bench "mtl" $ nf runMTL testMTL
+    [ bench "mtl" $ nf runMTL testMTL
     , bench "mtl-RWS" $ nf (\m -> runRWS m 0 1) testMTL
+    , bench "extensible" $ nf runExtensible testMTL
     , bench "exteff" $ nf runExtEff testExtEff
-    -- , bench "effin" $ nf runEffin testEffin
     , bench "freer-simple" $ nf runFreer testFreer
     , bench "fused-effects" $ nf runFused testFused
     ]
