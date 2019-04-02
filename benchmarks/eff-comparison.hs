@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE DataKinds, TypeOperators #-}
-{-# OPTIONS_GHC -ddump-simpl -dsuppress-all #-}
+{-# LANGUAGE PackageImports #-}
 import Data.Void
 
 -- extensible-effects
@@ -10,17 +10,26 @@ import qualified Control.Eff.Reader.Strict as ExtEff
 import qualified Control.Eff.Writer.Strict as ExtEff
 import qualified Control.Eff.State.Strict as ExtEff
 
+{-
+removed due to a dependency issue
 -- effin
-import qualified Control.Effect as Effin
-import qualified Control.Effect.Reader as Effin
-import qualified Control.Effect.Writer as Effin
-import qualified Control.Effect.State as Effin
+import qualified "effin" Control.Effect as Effin
+import qualified "effin" Control.Effect.Reader as Effin
+import qualified "effin" Control.Effect.Writer as Effin
+import qualified "effin" Control.Effect.State as Effin
+-}
 
--- freer
+-- freer-simple
 import qualified Control.Monad.Freer as Freer
 import qualified Control.Monad.Freer.Reader as Freer
 import qualified Control.Monad.Freer.Writer as Freer
 import qualified Control.Monad.Freer.State as Freer
+
+-- fused
+import qualified "fused-effects" Control.Effect as Fused
+import qualified "fused-effects" Control.Effect.Reader as Fused
+import qualified "fused-effects" Control.Effect.Writer as Fused
+import qualified "fused-effects" Control.Effect.State as Fused
 
 import Control.Monad.Reader
 import Control.Monad.State.Strict
@@ -30,7 +39,7 @@ import Control.Monad.RWS.Strict
 import Data.Extensible.Effect
 import Data.Extensible.Effect.Default
 
-import Criterion.Main
+import Gauge.Main
 
 testExtEff :: (ExtEff.Member (ExtEff.Reader Int) r
   , ExtEff.Member (ExtEff.State Int) r
@@ -44,14 +53,14 @@ testExtEff = replicateM_ 100 $ do
 
 runExtEff :: ExtEff.Eff
   ( ExtEff.Reader Int
-  ExtEff.:> ExtEff.State Int
-  ExtEff.:> ExtEff.Writer (Sum Int)
-  ExtEff.:> Void) a -> (Sum Int, (Int, a))
+  ': ExtEff.State Int
+  ': ExtEff.Writer (Sum Int)
+  ': '[]) a -> ((a, Int), Sum Int)
 runExtEff = ExtEff.run
   . ExtEff.runMonoidWriter
   . ExtEff.runState 0
-  . flip ExtEff.runReader 1
-
+  . ExtEff.runReader 1
+{-
 testEffin :: (Effin.EffectReader Int l
   , Effin.EffectState Int l
   , Effin.EffectWriter (Sum Int) l)
@@ -66,7 +75,7 @@ runEffin = Effin.runEffect
   . Effin.runWriter
   . Effin.runState 0
   . Effin.runReader 1
-
+-}
 testFreer :: (Freer.Member (Freer.Reader Int) r
   , Freer.Member (Freer.State Int) r
   , Freer.Member (Freer.Writer (Sum Int)) r)
@@ -81,8 +90,26 @@ runFreer :: Freer.Eff '[Freer.Reader Int, Freer.State Int, Freer.Writer (Sum Int
   -> ((a, Int), Sum Int)
 runFreer = Freer.run
   . Freer.runWriter
-  . flip Freer.runState 0
-  . flip Freer.runReader 1
+  . Freer.runState 0
+  . Freer.runReader 1
+
+testFused :: (Fused.Member (Fused.Reader Int) sig
+  , Fused.Member (Fused.State Int) sig
+  , Fused.Member (Fused.Writer (Sum Int)) sig
+  , Fused.Carrier sig m)
+  => m ()
+testFused = replicateM_ 100 $ do
+  r :: Int <- Fused.ask
+  s <- Fused.get
+  Fused.tell (Sum s)
+  Fused.put $! s + r
+
+runFused :: Fused.ReaderC Int (Fused.StateC Int (Fused.WriterC (Sum Int) Fused.PureC)) a
+  -> (Sum Int, (Int, a))
+runFused = Fused.run
+  . Fused.runWriter
+  . Fused.runState 0
+  . Fused.runReader 1
 
 testMTL :: (MonadReader Int m, MonadState Int m, MonadWriter (Sum Int) m)
   => m ()
@@ -110,7 +137,8 @@ main = defaultMain
     , bench "mtl" $ nf runMTL testMTL
     , bench "mtl-RWS" $ nf (\m -> runRWS m 0 1) testMTL
     , bench "exteff" $ nf runExtEff testExtEff
-    , bench "effin" $ nf runEffin testEffin
-    , bench "freer-effects" $ nf runFreer testFreer
+    -- , bench "effin" $ nf runEffin testEffin
+    , bench "freer-simple" $ nf runFreer testFreer
+    , bench "fused-effects" $ nf runFused testFused
     ]
   ]

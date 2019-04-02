@@ -32,11 +32,19 @@ benchmark records
   hs-source-dirs: benchmarks
   build-depends: base, lens, criterion, extensible
   default-language:    Haskell2010
+  buildable: False
 
 benchmark eff-comparison
   type:           exitcode-stdio-1.0
   main-is:        eff-comparison.hs
   ghc-options:    -O2
   hs-source-dirs: benchmarks
-  build-depends: base, criterion, extensible, extensible-effects, effin, freer-effects, mtl
+  build-depends: base
+    , gauge
+    , extensible
+    , extensible-effects
+--    , effin
+    , freer-simple
+    , fused-effects
+    , mtl
   default-language:    Haskell2010
